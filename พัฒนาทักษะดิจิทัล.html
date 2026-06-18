@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รายงานสรุปการพัฒนาทักษะดิจิทัล</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Prompt', 'sans-serif'] },
+                    colors: { primary: '#0ea5e9', success: '#10b981', warning: '#f59e0b' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f1f5f9; }
+        .glass-card { background: #ffffff; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    </style>
+</head>
+<body class="text-slate-700 antialiased font-sans p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-3">
+                    <i class="fa-solid fa-chart-pie text-primary"></i>
+                    รายงานสรุปการพัฒนาทักษะดิจิทัล (7 หลักสูตร)
+                </h1>
+                <p id="status-subtitle" class="text-slate-500 mt-1 pl-10 text-sm transition-all duration-300">กำลังเชื่อมต่อข้อมูลแบบ Real-time จาก Google Sheets...</p>
+            </div>
+            
+            <div class="flex flex-wrap gap-3">
+                <div class="relative">
+                    <i class="fa-solid fa-building absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                    <select id="deptFilter" onchange="applyFilter()" class="appearance-none bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 pl-10 pr-8 py-2 rounded-lg text-sm font-medium transition shadow-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer h-full">
+                        <option value="all">ทุกฝ่าย/แผนก</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                </div>
+
+                <div class="relative">
+                    <i class="fa-solid fa-layer-group absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                    <select id="levelFilter" onchange="applyFilter()" class="appearance-none bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 pl-10 pr-8 py-2 rounded-lg text-sm font-medium transition shadow-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer h-full max-w-[200px] truncate">
+                        <option value="all">ทุกกลุ่มตำแหน่ง</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                </div>
+
+                <button onclick="window.print()" class="bg-primary hover:bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transition flex items-center">
+                    <i class="fa-solid fa-download mr-2"></i> นำเสนอ (PDF)
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="glass-card p-6 flex items-center justify-between border-l-4 border-l-blue-500">
+                <div>
+                    <p class="text-sm text-slate-500 font-medium mb-1">บุคลากรทั้งหมด</p>
+                    <h3 class="text-3xl font-bold text-slate-800" id="kpi-total">0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 text-xl"><i class="fa-solid fa-users"></i></div>
+            </div>
+            <div class="glass-card p-6 flex items-center justify-between border-l-4 border-l-emerald-500">
+                <div>
+                    <p class="text-sm text-slate-500 font-medium mb-1">เรียนครบ 7 หลักสูตร</p>
+                    <h3 class="text-3xl font-bold text-success" id="kpi-completed">0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-success text-xl"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+            <div class="glass-card p-6 flex items-center justify-between border-l-4 border-l-amber-500">
+                <div>
+                    <p class="text-sm text-slate-500 font-medium mb-1">กำลังดำเนินการ</p>
+                    <h3 class="text-3xl font-bold text-warning" id="kpi-progress">0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-warning text-xl"><i class="fa-solid fa-spinner"></i></div>
+            </div>
+            <div class="glass-card p-6 flex items-center justify-between border-l-4 border-l-purple-500">
+                <div>
+                    <p class="text-sm text-slate-500 font-medium mb-1">อัตราความสำเร็จ</p>
+                    <h3 class="text-3xl font-bold text-purple-600" id="kpi-percent">0%</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-500 text-xl"><i class="fa-solid fa-chart-line"></i></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="glass-card p-6 lg:col-span-2">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-slate-800">อัตราการเรียนจบ 7 หลักสูตร (แยกตามฝ่าย)</h2>
+                </div>
+                <div class="relative h-72"><canvas id="deptChart"></canvas></div>
+            </div>
+            <div class="glass-card p-6">
+                <h2 class="text-lg font-semibold text-slate-800 mb-4">ภาพรวมทักษะทั้ง 7 ด้าน</h2>
+                <div class="relative h-72 flex justify-center items-center"><canvas id="skillRadarChart"></canvas></div>
+            </div>
+        </div>
+
+        <div class="glass-card overflow-hidden mb-8 flex flex-col">
+            <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                <h2 class="text-lg font-semibold text-slate-800">รายชื่อและการติดตามความคืบหน้า</h2>
+                <div class="relative w-full md:w-64">
+                    <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="ค้นหาชื่อ, ตำแหน่ง หรือ ฝ่าย..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:outline-none">
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left whitespace-nowrap" id="dataTable">
+                    <thead>
+                        <tr class="bg-slate-50/50 text-slate-500 text-sm border-b border-slate-200">
+                            <th class="py-4 px-6 font-medium">ชื่อ-นามสกุล</th>
+                            <th class="py-4 px-6 font-medium">ตำแหน่ง</th>
+                            <th class="py-4 px-6 font-medium">ฝ่าย/แผนก</th>
+                            <th class="py-4 px-6 font-medium">กลุ่มตำแหน่ง</th>
+                            <th class="py-4 px-6 font-medium">ความคืบหน้า (หลักสูตร)</th>
+                            <th class="py-4 px-6 font-medium text-center">สถานะ</th>
+                            <th class="py-4 px-6 font-medium text-center">รายละเอียด</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="text-sm divide-y divide-slate-100">
+                        <tr><td colspan="7" class="text-center py-8 text-slate-400"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>กำลังโหลดข้อมูล...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="pagination-container"></div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="personModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white text-left align-middle shadow-xl transition-all">
+                <div class="bg-primary px-6 py-4 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-user-graduate"></i> ข้อมูลผลการเรียนรายบุคคล
+                    </h3>
+                    <button onclick="closeModal()" class="text-white hover:text-sky-100 transition">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+                <div class="px-6 py-5">
+                    <div class="flex items-start gap-4 mb-6 pb-6 border-b border-slate-100">
+                        <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-2xl shrink-0">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <div>
+                            <h4 id="modalName" class="text-xl font-bold text-slate-800"></h4>
+                            <p id="modalPosition" class="text-slate-500 text-sm mt-1"></p>
+                            <p id="modalDeptLevel" class="text-slate-500 text-sm mt-1"></p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4 flex justify-between items-end">
+                        <h4 class="font-semibold text-slate-700">สถานะการเรียน 7 ทักษะดิจิทัล</h4>
+                        <span id="modalProgress" class="text-sm font-medium px-3 py-1 rounded-full"></span>
+                    </div>
+                    
+                    <div id="modalSkillsList" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- Skills will be injected here -->
+                    </div>
+                </div>
+                <div class="bg-slate-50 px-6 py-4 flex justify-end">
+                    <button onclick="closeModal()" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50 transition shadow-sm">
+                        ปิดหน้าต่าง
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        Chart.register(ChartDataLabels);
+
+        const sheetId = '196hfjZj0U8z7vJnSQV1d8oZnSZijhLYx6knzSe8BJyk';
+        const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+
+        // ตั้งค่าตำแหน่งคอลัมน์
+        const COL_NAME = 2;       
+        const COL_POSITION = 3;   
+        const COL_DEPT = 4;       
+        const COL_LEVEL = 6;      
+        const COL_COURSES = [7, 8, 9]; 
+
+        let globalData = [];         
+        let currentFilteredData = []; 
+        let deptChartInstance = null;
+        let radarChartInstance = null;
+        let isDataLoaded = false; 
+
+        // ตัวแปรสำหรับระบบ Pagination
+        let tableDataForPagination = [];
+        let currentPage = 1;
+        const itemsPerPage = 10; 
+
+        function cleanNameForMatch(name) {
+            if(!name) return "";
+            return name.replace(/นาย|นางสาว|นาง|ว่าที่|ร\.ต\.|ด\.ต\.|จ\.ส\.อ\.|พ\.ต\.ท\./g, '').replace(/\s+/g, '').trim().toLowerCase();
+        }
+
+        function calculateSimilarity(s1, s2) {
+            let longer = s1;
+            let shorter = s2;
+            if (s1.length < s2.length) { longer = s2; shorter = s1; }
+            let longerLength = longer.length;
+            if (longerLength === 0) return 1.0;
+            
+            let costs = new Array();
+            for (let i = 0; i <= longer.length; i++) {
+                let lastValue = i;
+                for (let j = 0; j <= shorter.length; j++) {
+                    if (i == 0) costs[j] = j;
+                    else {
+                        if (j > 0) {
+                            let newValue = costs[j - 1];
+                            if (longer.charAt(i - 1) != shorter.charAt(j - 1))
+                                newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                            costs[j - 1] = lastValue;
+                            lastValue = newValue;
+                        }
+                    }
+                }
+                if (i > 0) costs[shorter.length] = lastValue;
+            }
+            let distance = costs[shorter.length];
+            return (longerLength - distance) / parseFloat(longerLength);
+        }
+
+        window.google = {
+            visualization: {
+                Query: {
+                    setResponse: function(jsonData) {
+                        try {
+                            if (jsonData.status === 'error') throw new Error(jsonData.errors[0].message);
+                            
+                            isDataLoaded = true; 
+                            document.getElementById('status-subtitle').innerHTML = 'ข้อมูลอัปเดตแบบ Real-time จาก Google Sheets';
+                            
+                            globalData = processSheetData(jsonData.table.rows);
+                            
+                            if (globalData.length === 0) {
+                                loadMockData();
+                                return;
+                            }
+
+                            currentFilteredData = globalData; 
+                            populateFilters(globalData); 
+                            const skillsCount = calculateSkills(currentFilteredData);
+                            renderDashboard(currentFilteredData, skillsCount);
+
+                        } catch (error) {
+                            console.error(error);
+                            loadMockData(); 
+                        }
+                    }
+                }
+            }
+        };
+
+        function fetchRealData() {
+            const script = document.createElement('script');
+            script.src = sheetUrl;
+            script.onerror = () => loadMockData(); 
+            document.head.appendChild(script);
+
+            setTimeout(() => {
+                if (!isDataLoaded) {
+                    loadMockData();
+                }
+            }, 3000);
+        }
+
+        function loadMockData() {
+            if (isDataLoaded) return; 
+            isDataLoaded = true;
+            
+            document.getElementById('status-subtitle').innerHTML = 'ข้อมูลอัปเดตแบบ Real-time จาก Google Sheets <span class="text-amber-500 font-medium ml-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i>กำลังแสดงผลข้อมูลจำลอง (Mock Data)</span>';
+
+            // MOCK DATA แบบใส่รหัสหลักสูตร เพื่อทดสอบระบบประมวลผลใหม่
+            const mockRaw = [
+                // 1. ฝ่ายบริหาร
+                { name: "นายอำนวย ความสะดวก", position: "ผู้อำนวยการเขต", dept: "ฝ่ายบริหาร", level: "1. ผู้บริหาร", courses: ["DG-022", "DG-021", "DG-018", "DG-009", "DG-013", "A1005", "A1006"] },
+                { name: "นางวิสัยทัศน์ กว้างไกล", position: "ผู้ช่วยผู้อำนวยการเขต", dept: "ฝ่ายบริหาร", level: "1. ผู้บริหาร", courses: ["DG-022", "DG-021", "DG-018", "DG-009", "DG-013", "A1005", "A1006"] },
+                { name: "นายก้าวหน้า พาพัฒนา", position: "ผู้ช่วยผู้อำนวยการเขต", dept: "ฝ่ายบริหาร", level: "1. ผู้บริหาร", courses: ["DG-022", "DG-021", "DG-018", "A1005"] },
+
+                // 2. ฝ่ายปกครอง
+                { name: "นางสาวมีนา มาดี", position: "หัวหน้าฝ่ายปกครอง", dept: "ฝ่ายปกครอง", level: "2. หัวหน้างาน", courses: ["DG-022", "DG-021", "DG-018", "A1005", "DG-013", "DG-009", "A1006"] },
+                { name: "นายศเสนอ งานดี", position: "เจ้าหน้าที่ระบบงานคอมพิวเตอร์", dept: "ฝ่ายปกครอง", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-008", "DG-014", "202012"] },
+                { name: "นายประหยัด อดออม", position: "เจ้าพนักงานพัสดุ", dept: "ฝ่ายปกครอง", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-008", "DG-014"] },
+
+                // 3. ฝ่ายทะเบียน
+                { name: "นางสมหญิง ยิ้มแย้ม", position: "หัวหน้าฝ่ายทะเบียน", dept: "ฝ่ายทะเบียน", level: "2. หัวหน้างาน", courses: ["DG-022", "DG-021", "DG-018", "DG-009", "DG-013", "A1005", "A1006"] },
+                { name: "สมชาย มั่นคง", position: "นักจัดการงานทั่วไป", dept: "ฝ่ายทะเบียน", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-014"] },
+                { name: "นายสมชาย มั่นคง", position: "นักจัดการงานทั่วไป", dept: "ฝ่ายทะเบียน", level: "3. ระดับแรกบรรจุ", courses: ["202012"] }, 
+                { name: "นางสาวบริการ ดีเด่น", position: "เจ้าพนักงานธุรการ", dept: "ฝ่ายทะเบียน", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-008", "DG-016"] },
+
+                // 4. ฝ่ายโยธา
+                { name: "นางสาวใจดี ศรีสมร", position: "หัวหน้าฝ่ายโยธา", dept: "ฝ่ายโยธา", level: "2. หัวหน้างาน", courses: ["DG-022", "DG-021", "DG-018", "DG-009", "DG-013", "A1005"] },
+                { name: "นายมีชัย ชนะตลอด", position: "วิศวกรโยธา", dept: "ฝ่ายโยธา", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "AI-002", "202012", "DG-008", "DG-014", "DG-016", "DG-012"] },
+                { name: "นายรักชาติ ยิ่งชีพ", position: "นายช่างโยธา", dept: "ฝ่ายโยธา", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "AI-002"] },
+
+                // 5. ฝ่ายรายได้
+                { name: "นางใจกล้า หาญสู้", position: "หัวหน้าฝ่ายรายได้", dept: "ฝ่ายรายได้", level: "2. หัวหน้างาน", courses: ["DG-022", "DG-021", "DG-018", "DG-009", "DG-013", "A1005", "A1006"] },
+                { name: "นางสาวสุดสวย งามตา", position: "นักวิชาการจัดเก็บรายได้", dept: "ฝ่ายรายได้", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-008", "DG-014", "202012"] },
+                { name: "นายเงินทอง ไหลมา", position: "เจ้าพนักงานการเงิน", dept: "ฝ่ายรายได้", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-008", "202012", "DG-016", "DG-014", "DG-012", "AI-002"] },
+
+                // 6. ฝ่ายสิ่งแวดล้อมและสุขาภิบาล
+                { name: "นายต้นไม้ ใหญ่โต", position: "หัวหน้าฝ่ายสิ่งแวดล้อม", dept: "ฝ่ายสิ่งแวดล้อม", level: "2. หัวหน้างาน", courses: ["DG-022", "DG-021", "DG-018", "DG-009", "DG-013", "A1005", "A1006"] },
+                { name: "นายรักษ์โลก สะอาดดี", position: "นักวิชาการสุขาภิบาล", dept: "ฝ่ายสิ่งแวดล้อม", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "202012", "AI-002"] },
+                { name: "นางสาวใบไม้ สีเขียว", position: "เจ้าพนักงานสาธารณสุข", dept: "ฝ่ายสิ่งแวดล้อม", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-008", "DG-016", "DG-014"] },
+
+                // 7. ฝ่ายพัฒนาชุมชนและสวัสดิการสังคม
+                { name: "นางสาวฟ้าใส ใจสว่าง", position: "หัวหน้าฝ่ายพัฒนาชุมชน", dept: "ฝ่ายพัฒนาชุมชน", level: "2. หัวหน้างาน", courses: ["DG-022", "DG-021", "DG-018", "DG-009", "A1005", "DG-013"] },
+                { name: "นางมารวย ช่วยกัน", position: "นักพัฒนาชุมชน", dept: "ฝ่ายพัฒนาชุมชน", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-008", "DG-016", "DG-012", "202012", "DG-014", "AI-002"] },
+                { name: "นายสามัคคี ชุมนุม", position: "นักสังคมสงเคราะห์", dept: "ฝ่ายพัฒนาชุมชน", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-008"] },
+
+                // 8. ฝ่ายเทศกิจ
+                { name: "นายยุติธรรม ตรงไปตรงมา", position: "หัวหน้าฝ่ายเทศกิจ", dept: "ฝ่ายเทศกิจ", level: "2. หัวหน้างาน", courses: ["DG-022", "DG-021", "DG-018", "A1005"] },
+                { name: "นายเข้มแข็ง ยุติธรรม", position: "เจ้าพนักงานเทศกิจ", dept: "ฝ่ายเทศกิจ", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-014", "DG-008"] },
+                { name: "นายปกป้อง คุ้มภัย", position: "เจ้าพนักงานเทศกิจ", dept: "ฝ่ายเทศกิจ", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-008", "DG-014", "202012", "DG-016", "DG-012", "AI-002"] },
+
+                // 9. ฝ่ายรักษาความสะอาดและสวนสาธารณะ
+                { name: "นายสดใส ร่าเริง", position: "หัวหน้าฝ่ายรักษาความสะอาด", dept: "ฝ่ายรักษาความสะอาด", level: "2. หัวหน้างาน", courses: ["DG-022", "DG-021", "DG-018", "DG-013"] },
+                { name: "นางสาวสะอาด สะอ้าน", position: "พนักงานกวาด", dept: "ฝ่ายรักษาความสะอาด", level: "3. ระดับแรกบรรจุ", courses: ["DG-006"] },
+                { name: "สะอาด สะอ้าน", position: "พนักงานกวาด", dept: "ฝ่ายรักษาความสะอาด", level: "3. ระดับแรกบรรจุ", courses: ["DG-008", "AI-002", "DG-016"] },
+
+                // 10. ฝ่ายการศึกษา
+                { name: "นายสอนดี มีชัย", position: "หัวหน้าฝ่ายการศึกษา", dept: "ฝ่ายการศึกษา", level: "2. หัวหน้างาน", courses: ["DG-022", "DG-021", "DG-018", "DG-009", "DG-013", "A1005", "A1006"] },
+                { name: "นางปัญญา ดีเยี่ยม", position: "นักวิชาการศึกษา", dept: "ฝ่ายการศึกษา", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-008", "202012"] },
+                { name: "ปัญญา ดีเยียม", position: "นักวิชาการศึกษา", dept: "ฝ่ายการศึกษา", level: "3. ระดับแรกบรรจุ", courses: ["DG-014", "AI-002"] }, 
+                { name: "นายวิชา อนาคต", position: "เจ้าพนักงานการศึกษา", dept: "ฝ่ายการศึกษา", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-016", "DG-014", "202012", "AI-002", "DG-008", "DG-012"] },
+
+                // 11. ฝ่ายการคลัง
+                { name: "นางสาวบัญชี ถูกต้อง", position: "หัวหน้าฝ่ายการคลัง", dept: "ฝ่ายการคลัง", level: "2. หัวหน้างาน", courses: ["DG-022", "DG-021", "DG-018", "DG-009", "DG-013", "A1005", "A1006"] },
+                { name: "นายตัวเลข แม่นยำ", position: "นักวิชาการเงินและบัญชี", dept: "ฝ่ายการคลัง", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-014", "202012"] },
+                { name: "นางสาวรอบคอบ จ่ายตรง", position: "เจ้าพนักงานการเงิน", dept: "ฝ่ายการคลัง", level: "3. ระดับแรกบรรจุ", courses: ["DG-006", "DG-008", "AI-002", "DG-014"] }
+            ];
+
+            let rawRows = mockRaw.map(item => {
+                return {
+                    c: [
+                        null, null, 
+                        { v: item.name }, 
+                        { v: item.position }, 
+                        { v: item.dept }, 
+                        null, 
+                        { v: item.level }, 
+                        { v: item.courses.join(', ') }, 
+                        null, null
+                    ]
+                };
+            });
+
+            globalData = processSheetData(rawRows);
+            currentFilteredData = globalData;
+            
+            populateFilters(globalData);
+            const skillsCount = calculateSkills(currentFilteredData);
+            renderDashboard(currentFilteredData, skillsCount);
+        }
+
+        // ----------------------------------------------------
+        // ส่วนประมวลผลข้อมูล (ใช้วิธีเช็ครหัสหลักสูตรแทนข้อความ)
+        // ----------------------------------------------------
+        function processSheetData(rows) {
+            let staffMap = [];
+
+            rows.forEach((row) => {
+                if(!row || !row.c) return;
+                const getVal = (idx) => (row.c[idx] && row.c[idx].v) ? String(row.c[idx].v).trim() : '';
+
+                const name = getVal(COL_NAME);
+                const position = getVal(COL_POSITION);
+                const dept = getVal(COL_DEPT);
+                const level = getVal(COL_LEVEL);
+
+                if(!name || name.includes('เลือก') || name.includes('ชื่อ - นามสกุล')) return;
+
+                let allCoursesRaw = "";
+                COL_COURSES.forEach(colIdx => {
+                    allCoursesRaw += getVal(colIdx) + ",";
+                });
+                
+                // แยกรายวิชาตามเครื่องหมายลูกน้ำ
+                const courseArray = allCoursesRaw.split(',').filter(item => item.trim().length > 0);
+                
+                let cleanCurrentName = cleanNameForMatch(name);
+                let existingIndex = -1;
+
+                for (let i = 0; i < staffMap.length; i++) {
+                    if (staffMap[i].dept === dept) {
+                        let cleanExistingName = cleanNameForMatch(staffMap[i].name);
+                        let similarity = calculateSimilarity(cleanCurrentName, cleanExistingName);
+                        if (similarity >= 0.70) {
+                            existingIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                if (existingIndex === -1) {
+                    staffMap.push({
+                        name: name, 
+                        position: position || '-',
+                        dept: dept || 'ไม่ระบุฝ่าย',
+                        level: level || '-',
+                        skills: {
+                            'Digital Literacy': false, 
+                            'Digital Governance': false, 
+                            'Cyber Security': false,
+                            'Data Utilization and Sharing': false, 
+                            'Digital Service': false, 
+                            'Digital Leadership': false, 
+                            'Digital Technology (AI Basics)': false
+                        },
+                        completed: 0,
+                        total: 7
+                    });
+                    existingIndex = staffMap.length - 1;
+                }
+
+                let personObj = staffMap[existingIndex];
+                
+                // นับคะแนนทักษะจาก "รหัสหลักสูตร" แทนข้อความ (รวมถึงรหัสระดับปฏิบัติการด้วย)
+                courseArray.forEach(course => {
+                    let code = course.toUpperCase();
+                    
+                    // 1. Digital Literacy (DG-022 หรือ DG-006)
+                    if(code.includes('DG-022') || code.includes('DG-006')) personObj.skills['Digital Literacy'] = true;
+                    
+                    // 2. Digital Governance (DG-021 หรือ DG-008)
+                    if(code.includes('DG-021') || code.includes('DG-008')) personObj.skills['Digital Governance'] = true;
+                    
+                    // 3. Cyber Security (DG-018 หรือ DG-014)
+                    if(code.includes('DG-018') || code.includes('DG-014')) personObj.skills['Cyber Security'] = true;
+                    
+                    // 4. Data Utilization and Sharing (DG-009 หรือ 202012)
+                    if(code.includes('DG-009') || code.includes('202012')) personObj.skills['Data Utilization and Sharing'] = true;
+                    
+                    // 5. Digital Service (DG-013 หรือ DG-016)
+                    if(code.includes('DG-013') || code.includes('DG-016')) personObj.skills['Digital Service'] = true;
+                    
+                    // 6. Digital Leadership (A1005 หรือ DG-012)
+                    if(code.includes('A1005') || code.includes('DG-012')) personObj.skills['Digital Leadership'] = true;
+                    
+                    // 7. Digital Technology (AI Basics) (A1006 หรือ AI-002)
+                    if(code.includes('A1006') || code.includes('AI-002') || code.includes('AI002')) personObj.skills['Digital Technology (AI Basics)'] = true;
+                });
+
+                let trueCount = Object.values(personObj.skills).filter(val => val === true).length;
+                personObj.completed = trueCount;
+            });
+
+            return staffMap; 
+        }
+
+        function calculateSkills(dataArray) {
+            let counts = {
+                'Digital Literacy': 0, 
+                'Digital Governance': 0, 
+                'Cyber Security': 0,
+                'Data Utilization and Sharing': 0, 
+                'Digital Service': 0, 
+                'Digital Leadership': 0, 
+                'Digital Technology (AI Basics)': 0
+            };
+            
+            let totalValidStaff = dataArray.length;
+            if(totalValidStaff === 0) return counts;
+
+            dataArray.forEach(emp => {
+                for (let key in counts) {
+                    if (emp.skills[key]) counts[key]++;
+                }
+            });
+
+            for (let key in counts) {
+                counts[key] = Math.round((counts[key] / totalValidStaff) * 100);
+            }
+
+            return counts;
+        }
+
+        function populateFilters(data) {
+            const deptSelect = document.getElementById('deptFilter');
+            const depts = [...new Set(data.map(item => item.dept))]
+                            .filter(d => d !== 'ไม่ระบุฝ่าย')
+                            .sort();
+            deptSelect.innerHTML = '<option value="all">ทุกฝ่าย/แผนก</option>';
+            depts.forEach(dept => {
+                deptSelect.innerHTML += `<option value="${dept}">${dept}</option>`;
+            });
+
+            const levelSelect = document.getElementById('levelFilter');
+            const levels = [...new Set(data.map(item => item.level))]
+                            .filter(l => l !== '-' && l !== '')
+                            .sort(); 
+            levelSelect.innerHTML = '<option value="all">ทุกกลุ่มตำแหน่ง</option>';
+            levels.forEach(level => {
+                levelSelect.innerHTML += `<option value="${level}">${level}</option>`;
+            });
+        }
+
+        function applyFilter() {
+            const selectedDept = document.getElementById('deptFilter').value;
+            const selectedLevel = document.getElementById('levelFilter').value;
+            
+            currentFilteredData = globalData.filter(item => {
+                const matchDept = (selectedDept === 'all') || (item.dept === selectedDept);
+                const matchLevel = (selectedLevel === 'all') || (item.level === selectedLevel);
+                return matchDept && matchLevel;
+            });
+
+            const skillsCount = calculateSkills(currentFilteredData);
+            renderDashboard(currentFilteredData, skillsCount);
+            document.getElementById("searchInput").value = ""; 
+        }
+
+        function renderDashboard(data, skillsCount) {
+            if(data.length === 0) {
+                document.getElementById('table-body').innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-500">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</td></tr>`;
+                document.getElementById('pagination-container').innerHTML = '';
+                ['kpi-total', 'kpi-completed', 'kpi-progress', 'kpi-percent'].forEach(id => {
+                    document.getElementById(id).innerText = (id === 'kpi-percent') ? '0%' : '0';
+                });
+                if(deptChartInstance) { deptChartInstance.destroy(); deptChartInstance = null; }
+                if(radarChartInstance) { radarChartInstance.destroy(); radarChartInstance = null; }
+                return;
+            }
+
+            const totalStaff = data.length;
+            const completedStaff = data.filter(d => d.completed === d.total).length;
+            const progressStaff = totalStaff - completedStaff;
+            const percent = totalStaff > 0 ? Math.round((completedStaff / totalStaff) * 100) : 0;
+
+            document.getElementById('kpi-total').innerText = totalStaff;
+            document.getElementById('kpi-completed').innerText = completedStaff;
+            document.getElementById('kpi-progress').innerText = progressStaff;
+            document.getElementById('kpi-percent').innerText = percent + '%';
+
+            renderTable(data, 1); 
+
+            const deptStats = {};
+            data.forEach(emp => {
+                if(!deptStats[emp.dept]) deptStats[emp.dept] = { complete: 0, learning: 0 };
+                if(emp.completed === emp.total) deptStats[emp.dept].complete++;
+                else deptStats[emp.dept].learning++;
+            });
+
+            const labels = Object.keys(deptStats);
+            const dataComplete = labels.map(l => deptStats[l].complete);
+            const dataLearning = labels.map(l => deptStats[l].learning);
+
+            if(deptChartInstance) deptChartInstance.destroy();
+            const ctxDept = document.getElementById('deptChart').getContext('2d');
+            deptChartInstance = new Chart(ctxDept, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { 
+                            label: 'เรียนครบ 7 หลักสูตร', 
+                            data: dataComplete, 
+                            backgroundColor: '#10b981', 
+                            borderRadius: 4,
+                            datalabels: { color: '#ffffff', font: { weight: '600' } }
+                        },
+                        { 
+                            label: 'อยู่ระหว่างเรียน', 
+                            data: dataLearning, 
+                            backgroundColor: '#fcd34d', 
+                            borderRadius: 4,
+                            datalabels: { color: '#78350f', font: { weight: '600' } }
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { x: { stacked: true }, y: { stacked: true, ticks: { stepSize: 1 } } },
+                    plugins: { 
+                        legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } },
+                        datalabels: {
+                            display: function(context) { return context.dataset.data[context.dataIndex] > 0; },
+                            anchor: 'center', align: 'center'
+                        }
+                    }
+                }
+            });
+
+            if(radarChartInstance) radarChartInstance.destroy();
+            const ctxRadar = document.getElementById('skillRadarChart').getContext('2d');
+            radarChartInstance = new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: [
+                        'Digital Literacy', 
+                        'Digital Governance', 
+                        'Cyber Security', 
+                        'Data Utilization and Sharing', 
+                        'Digital Service', 
+                        'Digital Leadership', 
+                        'Digital Technology (AI Basics)'
+                    ],
+                    datasets: [{
+                        label: 'อัตราผู้เรียนผ่าน (%)',
+                        data: [
+                            skillsCount['Digital Literacy'], 
+                            skillsCount['Digital Governance'], 
+                            skillsCount['Cyber Security'], 
+                            skillsCount['Data Utilization and Sharing'], 
+                            skillsCount['Digital Service'], 
+                            skillsCount['Digital Leadership'], 
+                            skillsCount['Digital Technology (AI Basics)']
+                        ],
+                        backgroundColor: 'rgba(14, 165, 233, 0.2)',
+                        borderColor: '#0ea5e9',
+                        pointBackgroundColor: '#0ea5e9',
+                        pointBorderColor: '#fff',
+                        borderWidth: 2,
+                        datalabels: { display: false } 
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, layout: { padding: 15 },
+                    scales: { 
+                        r: { 
+                            min: 0, 
+                            max: 100, 
+                            ticks: { stepSize: 20 }, 
+                            pointLabels: { 
+                                font: { family: 'Prompt', size: 10 } 
+                            } 
+                        } 
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function renderTable(dataArray, page = 1) {
+            tableDataForPagination = dataArray; 
+            currentPage = page;
+
+            let sortedData = [...dataArray];
+            window.currentSortedData = sortedData;
+
+            sortedData.sort((a, b) => {
+                const isDirectorA = a.dept === "ฝ่ายบริหาร" && a.position.trim() === "ผู้อำนวยการเขต";
+                const isDirectorB = b.dept === "ฝ่ายบริหาร" && b.position.trim() === "ผู้อำนวยการเขต";
+                
+                if (isDirectorA && !isDirectorB) return -1;
+                if (!isDirectorA && isDirectorB) return 1;
+
+                const isSubDirectorA = a.dept === "ฝ่ายบริหาร" && a.position.trim() === "ผู้ช่วยผู้อำนวยการเขต";
+                const isSubDirectorB = b.dept === "ฝ่ายบริหาร" && b.position.trim() === "ผู้ช่วยผู้อำนวยการเขต";
+
+                if (isSubDirectorA && !isSubDirectorB) return -1;
+                if (!isSubDirectorA && isSubDirectorB) return 1;
+
+                return 0;
+            });
+
+            const totalItems = sortedData.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+            
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            
+            const paginatedData = sortedData.slice(startIndex, endIndex);
+
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = paginatedData.map((row, index) => {
+                const isComplete = row.completed === row.total;
+                const progressPercent = (row.completed / row.total) * 100;
+                
+                const statusBadge = isComplete 
+                    ? `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold"><i class="fa-solid fa-check mr-1"></i> ผ่านเกณฑ์</span>`
+                    : `<span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-semibold"><i class="fa-solid fa-clock mr-1"></i> ${row.completed}/7 รอเรียน</span>`;
+
+                return `
+                <tr class="hover:bg-slate-50 transition duration-150">
+                    <td class="py-4 px-6 font-medium text-slate-800 whitespace-nowrap">${row.name}</td>
+                    <td class="py-4 px-6 text-slate-500 max-w-[150px] truncate" title="${row.position}">${row.position}</td>
+                    <td class="py-4 px-6 text-slate-500 max-w-[120px] truncate" title="${row.dept}">${row.dept}</td>
+                    <td class="py-4 px-6 text-slate-500 max-w-[150px] truncate" title="${row.level}">${row.level}</td>
+                    <td class="py-4 px-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-full bg-slate-200 rounded-full h-2.5 max-w-[150px]">
+                                <div class="${isComplete ? 'bg-emerald-500' : 'bg-primary'} h-2.5 rounded-full" style="width: ${progressPercent}%"></div>
+                            </div>
+                            <span class="text-xs font-medium text-slate-500">${row.completed}/7</span>
+                        </div>
+                    </td>
+                    <td class="py-4 px-6 text-center">${statusBadge}</td>
+                    <td class="py-4 px-6 text-center">
+                        <button onclick="openModal(${startIndex + index})" class="w-8 h-8 rounded-full bg-sky-50 text-primary hover:bg-primary hover:text-white transition flex items-center justify-center mx-auto" title="ดูผลการเรียน">
+                            <i class="fa-solid fa-list-check"></i>
+                        </button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+
+            renderPaginationControls(totalItems, totalPages);
+        }
+
+        function renderPaginationControls(totalItems, totalPages) {
+            const container = document.getElementById('pagination-container');
+            if (totalItems === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const currentStart = ((currentPage - 1) * itemsPerPage) + 1;
+            const currentEnd = Math.min(currentPage * itemsPerPage, totalItems);
+
+            let html = `
+            <div class="flex flex-col md:flex-row items-center justify-between w-full p-4 border-t border-slate-100 bg-slate-50/50 gap-4">
+                <div class="text-sm text-slate-500">
+                    แสดง <span class="font-medium text-slate-700">${currentStart}</span> ถึง <span class="font-medium text-slate-700">${currentEnd}</span> จากทั้งหมด <span class="font-medium text-slate-700">${totalItems}</span> รายการ
+                </div>
+                <div class="flex gap-1">`;
+
+            html += `<button onclick="changePage(${currentPage - 1})" class="px-3 py-1 rounded-md border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition" ${currentPage === 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-left text-xs"></i></button>`;
+
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+            if (endPage - startPage < 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const activeClass = i === currentPage 
+                    ? 'bg-primary text-white border-primary shadow-sm' 
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+                
+                html += `<button onclick="changePage(${i})" class="w-8 h-8 flex items-center justify-center rounded-md border text-sm font-medium transition ${activeClass}">${i}</button>`;
+            }
+
+            html += `<button onclick="changePage(${currentPage + 1})" class="px-3 py-1 rounded-md border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition" ${currentPage === totalPages ? 'disabled' : ''}><i class="fa-solid fa-chevron-right text-xs"></i></button>`;
+
+            html += `</div></div>`;
+            container.innerHTML = html;
+        }
+
+        function changePage(page) {
+            renderTable(tableDataForPagination, page);
+        }
+
+        function searchTable() {
+            const input = document.getElementById("searchInput").value.toLowerCase();
+            const filteredBySearch = currentFilteredData.filter(item => 
+                item.name.toLowerCase().includes(input) || 
+                item.dept.toLowerCase().includes(input) ||
+                item.position.toLowerCase().includes(input)
+            );
+            renderTable(filteredBySearch, 1);
+        }
+
+        function openModal(index) {
+            if (!window.currentSortedData || !window.currentSortedData[index]) return;
+            const person = window.currentSortedData[index];
+            
+            document.getElementById('modalName').innerText = person.name;
+            document.getElementById('modalPosition').innerText = person.position;
+            document.getElementById('modalDeptLevel').innerHTML = `<span class="mr-3"><i class="fa-solid fa-building mr-1"></i> ${person.dept}</span><span><i class="fa-solid fa-layer-group mr-1"></i> ${person.level}</span>`;
+            
+            const isComplete = person.completed === person.total;
+            const progressEl = document.getElementById('modalProgress');
+            progressEl.innerText = `${person.completed}/7 หลักสูตร`;
+            if (isComplete) {
+                progressEl.className = 'text-sm font-medium px-3 py-1 rounded-full bg-emerald-100 text-emerald-700';
+            } else {
+                progressEl.className = 'text-sm font-medium px-3 py-1 rounded-full bg-amber-100 text-amber-700';
+            }
+            
+            const skillsListEl = document.getElementById('modalSkillsList');
+            let skillsHtml = '';
+            
+            const skillsOrder = [
+                'Digital Literacy', 
+                'Digital Governance', 
+                'Cyber Security', 
+                'Data Utilization and Sharing', 
+                'Digital Service', 
+                'Digital Leadership', 
+                'Digital Technology (AI Basics)'
+            ];
+            
+            skillsOrder.forEach(skill => {
+                const passed = person.skills[skill];
+                if (passed) {
+                    skillsHtml += `
+                    <div class="flex items-center gap-3 p-3 rounded-lg border border-emerald-100 bg-emerald-50/30">
+                        <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                        <span class="text-sm font-medium text-slate-700">${skill}</span>
+                    </div>`;
+                } else {
+                    skillsHtml += `
+                    <div class="flex items-center gap-3 p-3 rounded-lg border border-slate-100 bg-slate-50">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-clock"></i>
+                        </div>
+                        <span class="text-sm font-medium text-slate-500">${skill}</span>
+                    </div>`;
+                }
+            });
+            
+            skillsListEl.innerHTML = skillsHtml;
+            
+            const modal = document.getElementById('personModal');
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('personModal');
+            modal.classList.add('hidden');
+        }
+
+        fetchRealData();
+    </script>
+</body>
+</html>
