@@ -34,7 +34,7 @@
                     <i class="fa-solid fa-chart-pie text-primary"></i>
                     รายงานสรุปการพัฒนาทักษะดิจิทัล (7 หลักสูตร)
                 </h1>
-                <p id="status-subtitle" class="text-slate-500 mt-1 pl-10 text-sm transition-all duration-300">กำลังเชื่อมต่อข้อมูลแบบ Real-time จาก Google Sheets...</p>
+                <p id="status-subtitle" class="text-slate-500 mt-1 pl-10 text-sm transition-all duration-300">กำลังอัปเดตข้อมูล...</p>
             </div>
             
             <div class="flex flex-wrap gap-3">
@@ -242,7 +242,11 @@
                             if (jsonData.status === 'error') throw new Error(jsonData.errors[0].message);
                             
                             isDataLoaded = true; 
-                            document.getElementById('status-subtitle').innerHTML = 'ข้อมูลอัปเดตแบบ Real-time จาก Google Sheets';
+                            
+                            const now = new Date();
+                            const dateStr = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+                            const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                            document.getElementById('status-subtitle').innerHTML = `ข้อมูลอัปเดต ณ วันที่ ${dateStr} เวลา ${timeStr} น.`;
                             
                             globalData = processSheetData(jsonData.table.rows);
                             
@@ -251,10 +255,39 @@
                                 return;
                             }
 
-                            currentFilteredData = globalData; 
+                            const deptSelect = document.getElementById('deptFilter');
+                            const levelSelect = document.getElementById('levelFilter');
+                            const searchInput = document.getElementById('searchInput');
+                            
+                            const currentDept = deptSelect.value;
+                            const currentLevel = levelSelect.value;
+                            const currentSearch = searchInput.value;
+                            const oldPage = currentPage;
+
                             populateFilters(globalData); 
+
+                            if (currentDept) deptSelect.value = currentDept;
+                            if (currentLevel) levelSelect.value = currentLevel;
+                            if (currentSearch) searchInput.value = currentSearch;
+
+                            currentFilteredData = globalData.filter(item => {
+                                const matchDept = (deptSelect.value === 'all') || (item.dept === deptSelect.value);
+                                const matchLevel = (levelSelect.value === 'all') || (item.level === levelSelect.value);
+                                return matchDept && matchLevel;
+                            });
+
+                            if (searchInput.value) {
+                                const q = searchInput.value.toLowerCase();
+                                currentFilteredData = currentFilteredData.filter(item => 
+                                    item.name.toLowerCase().includes(q) || 
+                                    item.dept.toLowerCase().includes(q) ||
+                                    item.position.toLowerCase().includes(q)
+                                );
+                            }
+
                             const skillsCount = calculateSkills(currentFilteredData);
                             renderDashboard(currentFilteredData, skillsCount);
+                            changePage(oldPage);
 
                         } catch (error) {
                             console.error(error);
@@ -266,8 +299,12 @@
         };
 
         function fetchRealData() {
+            const oldScript = document.getElementById('g-sheet-script');
+            if (oldScript) oldScript.remove();
+
             const script = document.createElement('script');
-            script.src = sheetUrl;
+            script.id = 'g-sheet-script';
+            script.src = sheetUrl + '&_ts=' + new Date().getTime();
             script.onerror = () => loadMockData(); 
             document.head.appendChild(script);
 
@@ -282,7 +319,10 @@
             if (isDataLoaded) return; 
             isDataLoaded = true;
             
-            document.getElementById('status-subtitle').innerHTML = 'ข้อมูลอัปเดตแบบ Real-time จาก Google Sheets <span class="text-amber-500 font-medium ml-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i>กำลังแสดงผลข้อมูลจำลอง (Mock Data)</span>';
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+            const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('status-subtitle').innerHTML = `ข้อมูลอัปเดต ณ วันที่ ${dateStr} เวลา ${timeStr} น. <span class="text-amber-500 font-medium ml-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i>กำลังแสดงผลข้อมูลจำลอง (Mock Data)</span>`;
 
             // MOCK DATA แบบใส่รหัสหลักสูตร เพื่อทดสอบระบบประมวลผลใหม่
             const mockRaw = [
@@ -831,6 +871,7 @@
         }
 
         fetchRealData();
+        setInterval(fetchRealData, 30000);
     </script>
 </body>
 </html>
