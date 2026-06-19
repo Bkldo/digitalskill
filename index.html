@@ -705,6 +705,14 @@
                 if (isSubDirectorA && !isSubDirectorB) return -1;
                 if (!isSubDirectorA && isSubDirectorB) return 1;
 
+                // จัดลำดับให้หัวหน้าฝ่าย (กลุ่มตำแหน่งขึ้นต้นด้วย 2.) อยู่ลำดับแรกในแต่ละฝ่าย
+                if (a.dept === b.dept) {
+                    const isHeadA = a.level && a.level.startsWith("2.");
+                    const isHeadB = b.level && b.level.startsWith("2.");
+                    if (isHeadA && !isHeadB) return -1;
+                    if (!isHeadA && isHeadB) return 1;
+                }
+
                 return 0;
             });
 
