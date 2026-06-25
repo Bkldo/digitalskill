@@ -28,33 +28,33 @@
 <body class="text-slate-700 antialiased font-sans p-4 md:p-8">
 
     <div class="max-w-7xl mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-            <div>
-                <h1 class="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-3">
-                    <i class="fa-solid fa-chart-pie text-primary"></i>
-                    รายงานสรุปการพัฒนาทักษะดิจิทัล (7 หลักสูตร)
-                </h1>
-                <p id="status-subtitle" class="text-slate-500 mt-1 pl-10 text-sm transition-all duration-300">กำลังอัปเดตข้อมูล...</p>
+        <div class="mb-8">
+            <!-- แถวหัวข้อ -->
+            <div class="flex items-center gap-3 mb-1">
+                <i class="fa-solid fa-chart-pie text-primary text-2xl flex-shrink-0"></i>
+                <h1 class="text-2xl font-bold text-slate-800 leading-tight">รายงานสรุปการพัฒนาทักษะดิจิทัล (7 หลักสูตร)</h1>
             </div>
-            
-            <div class="flex flex-wrap gap-3">
-                <div class="relative">
-                    <i class="fa-solid fa-building absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
-                    <select id="deptFilter" onchange="applyFilter()" class="appearance-none bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 pl-10 pr-8 py-2 rounded-lg text-sm font-medium transition shadow-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer h-full">
+            <p id="status-subtitle" class="text-slate-500 text-sm mb-4 pl-9 transition-all duration-300">กำลังอัปเดตข้อมูล...</p>
+
+            <!-- แถวตัวกรอง+ปุ่ม -->
+            <div class="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+                <div class="relative min-w-0 flex-1">
+                    <i class="fa-solid fa-building absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                    <select id="deptFilter" onchange="applyFilter()" class="w-full appearance-none bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 pl-9 pr-8 py-2 rounded-lg text-sm font-medium transition shadow-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
                         <option value="all">ทุกฝ่าย/แผนก</option>
                     </select>
-                    <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                    <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
                 </div>
 
-                <div class="relative">
-                    <i class="fa-solid fa-layer-group absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
-                    <select id="levelFilter" onchange="applyFilter()" class="appearance-none bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 pl-10 pr-8 py-2 rounded-lg text-sm font-medium transition shadow-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer h-full max-w-[200px] truncate">
+                <div class="relative min-w-0 flex-1">
+                    <i class="fa-solid fa-layer-group absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                    <select id="levelFilter" onchange="applyFilter()" class="w-full appearance-none bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 pl-9 pr-8 py-2 rounded-lg text-sm font-medium transition shadow-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
                         <option value="all">ทุกกลุ่มตำแหน่ง</option>
                     </select>
-                    <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                    <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
                 </div>
 
-                <button onclick="window.print()" class="bg-primary hover:bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transition flex items-center">
+                <button onclick="window.print()" class="bg-primary hover:bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transition flex items-center flex-shrink-0 whitespace-nowrap">
                     <i class="fa-solid fa-download mr-2"></i> นำเสนอ (PDF)
                 </button>
             </div>
