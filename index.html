@@ -439,6 +439,13 @@
                     if (staffMap[i].dept === dept) {
                         let cleanExistingName = cleanNameForMatch(staffMap[i].name);
                         let similarity = calculateSimilarity(cleanCurrentName, cleanExistingName);
+                        
+                        // ยกเว้นกรณีฝาแฝด พรกนก และ อรกนก ไม่ให้ระบบมองเป็นคนเดียวกัน
+                        if ((cleanCurrentName.includes('พรกนก') && cleanExistingName.includes('อรกนก')) ||
+                            (cleanCurrentName.includes('อรกนก') && cleanExistingName.includes('พรกนก'))) {
+                            similarity = 0; // บังคับให้เป็นคนละคน
+                        }
+
                         if (similarity >= 0.70) {
                             existingIndex = i;
                             break;
