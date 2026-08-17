@@ -32,7 +32,7 @@
             <!-- แถวหัวข้อ -->
             <div class="flex items-center gap-3 mb-1">
                 <i class="fa-solid fa-chart-pie text-primary text-2xl flex-shrink-0"></i>
-                <h1 class="text-2xl font-bold text-slate-800 leading-tight">รายงานสรุปการพัฒนาทักษะดิจิทัล (7 หลักสูตร)</h1>
+                <h1 class="text-2xl font-bold text-slate-800 leading-tight">รายงานสรุปการพัฒนาทักษะดิจิทัล</h1>
             </div>
             <p id="status-subtitle" class="text-slate-500 text-sm mb-4 pl-9 transition-all duration-300">กำลังอัปเดตข้อมูล...</p>
 
@@ -70,7 +70,7 @@
             </div>
             <div class="glass-card p-6 flex items-center justify-between border-l-4 border-l-emerald-500">
                 <div>
-                    <p class="text-sm text-slate-500 font-medium mb-1">เรียนครบ 7 หลักสูตร</p>
+                    <p class="text-sm text-slate-500 font-medium mb-1">เรียนครบตามเกณฑ์</p>
                     <h3 class="text-3xl font-bold text-success" id="kpi-completed">0</h3>
                 </div>
                 <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-success text-xl"><i class="fa-solid fa-circle-check"></i></div>
@@ -94,7 +94,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div class="glass-card p-6 lg:col-span-2">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-semibold text-slate-800">อัตราการเรียนจบ 7 หลักสูตร (แยกตามฝ่าย)</h2>
+                    <h2 class="text-lg font-semibold text-slate-800">อัตราการเรียนจบตามเกณฑ์ (แยกตามฝ่าย)</h2>
                 </div>
                 <div class="relative h-72"><canvas id="deptChart"></canvas></div>
             </div>
@@ -160,7 +160,7 @@
                     </div>
                     
                     <div class="mb-4 flex justify-between items-end">
-                        <h4 class="font-semibold text-slate-700">สถานะการเรียน 7 ทักษะดิจิทัล</h4>
+                        <h4 class="font-semibold text-slate-700">สถานะการเรียนทักษะดิจิทัล</h4>
                         <span id="modalProgress" class="text-sm font-medium px-3 py-1 rounded-full"></span>
                     </div>
                     
@@ -189,6 +189,9 @@
         const COL_DEPT = 4;       
         const COL_LEVEL = 6;      
         const COL_COURSES = [7, 8, 9]; 
+
+        // กำหนดคำค้นหาสำหรับตำแหน่งที่ต้องการให้ผ่านเกณฑ์แค่ 1 หลักสูตร (สามารถเพิ่มคำอื่นๆ ในวงเล็บได้เลย)
+        const EMPLOYEE_KEYWORDS = ['ลูกจ้าง','พนักงานขับ','พนักงานกวาด','นายท่า','พนักงานเก็บขน','พนักงานประจำรถ'];
 
         let globalData = [];         
         let currentFilteredData = []; 
@@ -469,7 +472,7 @@
                             'Digital Technology (AI Basics)': false
                         },
                         completed: 0,
-                        total: 7
+                        total: EMPLOYEE_KEYWORDS.some(keyword => position.includes(keyword) || level.includes(keyword)) ? 1 : 7
                     });
                     existingIndex = staffMap.length - 1;
                 }
@@ -584,7 +587,7 @@
             }
 
             const totalStaff = data.length;
-            const completedStaff = data.filter(d => d.completed === d.total).length;
+            const completedStaff = data.filter(d => d.completed >= d.total).length;
             const progressStaff = totalStaff - completedStaff;
             const percent = totalStaff > 0 ? Math.round((completedStaff / totalStaff) * 100) : 0;
 
@@ -598,7 +601,7 @@
             const deptStats = {};
             data.forEach(emp => {
                 if(!deptStats[emp.dept]) deptStats[emp.dept] = { complete: 0, learning: 0 };
-                if(emp.completed === emp.total) deptStats[emp.dept].complete++;
+                if(emp.completed >= emp.total) deptStats[emp.dept].complete++;
                 else deptStats[emp.dept].learning++;
             });
 
@@ -614,7 +617,7 @@
                     labels: labels,
                     datasets: [
                         { 
-                            label: 'เรียนครบ 7 หลักสูตร', 
+                            label: 'เรียนครบตามเกณฑ์', 
                             data: dataComplete, 
                             backgroundColor: '#10b981', 
                             borderRadius: 4,
@@ -736,12 +739,12 @@
 
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = paginatedData.map((row, index) => {
-                const isComplete = row.completed === row.total;
-                const progressPercent = (row.completed / row.total) * 100;
+                const isComplete = row.completed >= row.total;
+                const progressPercent = Math.min((row.completed / row.total) * 100, 100);
                 
                 const statusBadge = isComplete 
                     ? `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold"><i class="fa-solid fa-check mr-1"></i> ผ่านเกณฑ์</span>`
-                    : `<span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-semibold"><i class="fa-solid fa-clock mr-1"></i> ${row.completed}/7 รอเรียน</span>`;
+                    : `<span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-semibold"><i class="fa-solid fa-clock mr-1"></i> ${row.completed}/${row.total} รอเรียน</span>`;
 
                 return `
                 <tr class="hover:bg-slate-50 transition duration-150">
@@ -754,7 +757,7 @@
                             <div class="w-full bg-slate-200 rounded-full h-2.5 max-w-[150px]">
                                 <div class="${isComplete ? 'bg-emerald-500' : 'bg-primary'} h-2.5 rounded-full" style="width: ${progressPercent}%"></div>
                             </div>
-                            <span class="text-xs font-medium text-slate-500">${row.completed}/7</span>
+                            <span class="text-xs font-medium text-slate-500">${row.completed}/${row.total}</span>
                         </div>
                     </td>
                     <td class="py-4 px-6 text-center">${statusBadge}</td>
@@ -831,9 +834,9 @@
             document.getElementById('modalPosition').innerText = person.position;
             document.getElementById('modalDeptLevel').innerHTML = `<span class="mr-3"><i class="fa-solid fa-building mr-1"></i> ${person.dept}</span><span><i class="fa-solid fa-layer-group mr-1"></i> ${person.level}</span>`;
             
-            const isComplete = person.completed === person.total;
+            const isComplete = person.completed >= person.total;
             const progressEl = document.getElementById('modalProgress');
-            progressEl.innerText = `${person.completed}/7 หลักสูตร`;
+            progressEl.innerText = `${person.completed}/${person.total} หลักสูตร`;
             if (isComplete) {
                 progressEl.className = 'text-sm font-medium px-3 py-1 rounded-full bg-emerald-100 text-emerald-700';
             } else {
